@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import useLocalStorage from "./hooks/useLocalStorage";
 import styled from "styled-components";
+import ReactUseLocalStorage from "./components/ReactUseLocalStorage";
 
 const App: React.FC = () => {
   const { getLocalStorage, setLocalStorage } = useLocalStorage();
@@ -60,6 +61,7 @@ const App: React.FC = () => {
           useState. If you refresh the page, there is no flash.
         </p>
         <h1 className="string-value:">value 3: {thirdString}</h1>
+        <ReactUseLocalStorage />
       </section>
     </Wrapper>
   );
