@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { CodeBlock, Code, dracula } from "react-code-blocks";
 
 const ReactUseLocalStorage = () => {
-  const [value, setValue, remove] = useLocalStorage("myString", "foo");
+  const [value, setValue, remove] = useLocalStorage("storageLimit", "foo");
   return (
     <Wrapper>
       <div>Value: {value}</div>
@@ -381,8 +381,12 @@ if (localStorageValue !== null) {
       <p>
         I removed the try-catch block from the initializer code and ran the
         project in a private window and the code didn't throw. That's not to say
-        that it won't, but it didn't in Chrome 122. I also didn't try to set or
-        create storage restrictions.
+        that it won't, but it didn't in Chrome 122. With the try and catch in
+        place, I played around with initializing the custom hook with a very
+        large string. When the string would exceed the storage quota the hook
+        does indeed fail silently - does not throw an error and does not set a
+        value in local storage. Removing a character from the string resulted in
+        the local storage value being set successfully.
       </p>
     </Wrapper>
   );

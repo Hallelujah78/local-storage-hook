@@ -36,7 +36,7 @@ const App: React.FC = () => {
     if (localStore) {
       setString(localStore);
     } else {
-      localStorage.setItem("string", "");
+      // localStorage.setItem("string", "");
     }
   }, []);
 
