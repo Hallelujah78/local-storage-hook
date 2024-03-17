@@ -29,7 +29,7 @@ const useLocalStorage = <T>(
   if (!key) {
     throw new Error("useLocalStorage key may not be falsy");
   }
-
+  console.log("use local storage hook is running");
   const deserializer = options
     ? options.raw
       ? (value: unknown) => value
@@ -39,6 +39,7 @@ const useLocalStorage = <T>(
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const initializer = useRef((key: string) => {
     try {
+      console.log("initializer code is running");
       const serializer = options
         ? options.raw
           ? String

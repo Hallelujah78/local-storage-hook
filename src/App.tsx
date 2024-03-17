@@ -100,6 +100,7 @@ const Wrapper = styled.div`
       margin-bottom: 3rem;
     }
     p {
+      line-height: 2.1rem;
       max-width: 60vw;
       font-size: calc(0.95rem + 0.390625vw);
       margin: 1.5rem 0 1.5rem 0;

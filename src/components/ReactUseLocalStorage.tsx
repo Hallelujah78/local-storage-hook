@@ -1,6 +1,6 @@
 import useLocalStorage from "../hooks/useLocalStorageReactUse";
 import styled from "styled-components";
-import { CodeBlock, a11yDark, Code } from "react-code-blocks";
+import { CodeBlock, Code, dracula } from "react-code-blocks";
 
 const ReactUseLocalStorage = () => {
   const [value, setValue, remove] = useLocalStorage("myString", "foo");
@@ -16,7 +16,7 @@ const ReactUseLocalStorage = () => {
       </p>
       <p>
         First off, we see that we import{" "}
-        <Code text={`Dispatch`} theme={a11yDark} language="js" /> and
+        <Code text={`Dispatch`} theme={dracula} language="js" /> and
         `SetStateAction` from React. These are required when setting types for
         custom hooks involving state. A great writeup{" "}
         <a href="https://kentcdodds.com/blog/wrapping-react-use-state-with-type-script">
@@ -43,7 +43,7 @@ const ReactUseLocalStorage = () => {
       deserializer: (value: string) => T;
     };`}
           language={"typescript"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
@@ -76,9 +76,10 @@ const ReactUseLocalStorage = () => {
   }
   if (!key) {
     throw new Error("useLocalStorage key may not be falsy");
-  }`}
+  }
+  ...}`}
           language={"typescript"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
@@ -139,7 +140,7 @@ const ReactUseLocalStorage = () => {
 console.log(JSON.stringify(original));
 \\\\ output: "{"email":{},"name":"John Doe","yearOfBirth":1988}" `}
           language={"js"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
@@ -149,7 +150,7 @@ console.log(JSON.stringify(original));
         regular expression, /foo/i, and we choose to represent it like this:{" "}
         <Code
           text={`["<<REGEX", "/foo/i", "REGEX>>"].`}
-          theme={a11yDark}
+          theme={dracula}
           language="js"
         />{" "}
         Since this is an array of strings, we can serialize it. To deserialize
@@ -171,7 +172,7 @@ console.log(JSON.stringify(original));
   return value
 }`}
           language={"js"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
@@ -204,7 +205,7 @@ console.log(JSON.stringify(original));
 var serialized = JSON.stringify(original, serializer)
 var deserialized = JSON.parse(serialized, deserialize)`}
           language={"js"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
@@ -250,16 +251,143 @@ var deserialized = JSON.parse(serialized, deserialize)`}
   }
 });`}
           language={"js"}
-          theme={a11yDark}
+          theme={dracula}
           showLineNumbers={false}
           wrapLongLines={true}
         />
       </div>
-      ;
+      <p>
+        Reminder: useRef is used to create a mutable reference to an element or
+        value. It does not trigger a re-render. Commonly used to access and
+        manage DOM elments directly, storing persistent values, or working with
+        values that should not trigger a re-render. Storing previous values:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`import React, { useEffect, useRef } from "react";
+
+const PreviousValueComponent = ({ value }) => {
+  const prevValueRef = useRef();
+
+  useEffect(() => {
+    prevValueRef.current = value;
+  }, [value]);
+
+  return (
+    <div>
+      <p>Current Value: {value}</p>
+      <p>Previous Value: {prevValueRef.current}</p>
+    </div>
+  );
+};`}
+          language={"jsx"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        Note how when the value is updated, the prevValueRef.current gets
+        updated inside the useEffect. Use useRef only when you need to manage a
+        mutable value or reference that should not affect the component's
+        rendering. Advanced examples of using useRef can be found{" "}
+        <a href="https://medium.com/@zahidbashirkhan/react-useref-use-cases-with-examples-d7680d48a6e1#:~:text=Conclusion,without%20triggering%20unnecessary%20re%2Drenders.">
+          here
+        </a>
+        , including using useImperativeHandle with ref and forwardRef to provide
+        a more controlled and explicit way of interacting with a child
+        component's methods or properties from its parent.
+      </p>
+      <p>
+        Back to our useLocalStorage hook, we can say that we are using useRef
+        here because we want initialize to refer to a persistent value and we
+        don't want to trigger re-renders. Beyond that, I'll have to figure it
+        out later!
+      </p>
+      <p>
+        We are wrapping a bunch of code in a try-catch block. We set our
+        'serializer.' If options is true and options.raw is true, then our
+        serializer is 'String.' String here is the constructor method for
+        strings, something that I have never used. Interesting points about the
+        String constructor:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`let str1 = new String('What am I?');
+typeof str1; // 'object'
+
+let str2 = String('What am I?');
+typeof str2; // 'string'`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        When a string is initialized with the new keyword, it is an object. When
+        used without new, like with str2 above, it is of type string. I'll take
+        a wild guess that since we are serializing something, we won't be using
+        String with the new keyword later in our custom hook.
+      </p>
+      <p>
+        As with our deserializer, if options.raw is false, we use the custom
+        serializer, options.serializer. If options is false, we default to using
+        JSON.stringify. Still inside our try block:
+      </p>
+
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`const localStorageValue = localStorage.getItem(key);
+if (localStorageValue !== null) {
+  return deserializer(localStorageValue);
+} else {
+  initialValue && localStorage.setItem(key, serializer(initialValue));
+  return initialValue;
+}`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        We get the local storage item in localStorage via the key passed to our
+        hook. If it exists, we return the deserialized value. Otherwise, if
+        initialValue is truthy, we set the local storage value using the key,
+        initialValue and the serializer. Looking at the catch block, we return
+        the initialValue. The comment tells us that if there's storage
+        restriction or the user is in private mode, localStorage, parse or
+        stringify can throw.
+      </p>
+      <p>
+        I removed the try-catch block from the initializer code and ran the
+        project in a private window and the code didn't throw. That's not to say
+        that it won't, but it didn't in Chrome 122. I also didn't try to set or
+        create storage restrictions.
+      </p>
     </Wrapper>
   );
 };
-// ""
+
 export default ReactUseLocalStorage;
 
 const Wrapper = styled.div`
@@ -271,7 +399,7 @@ const Wrapper = styled.div`
   }
 `;
 
-//  <Code text={`Dispatch`} theme={a11yDark} language="js" />
+//  <Code text={`Dispatch`} theme={dracula} language="js" />
 
 //  <div
 //    className="code-block-wrapper"
@@ -283,8 +411,8 @@ const Wrapper = styled.div`
 //    <CodeBlock
 //      text={``}
 //      language={"js"}
-//      theme={a11yDark}
+//      theme={dracula}
 //      showLineNumbers={false}
 //      wrapLongLines={true}
 //    />
-//  </div>;
+//  </div>
