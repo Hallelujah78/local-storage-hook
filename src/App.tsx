@@ -70,8 +70,11 @@ const App: React.FC = () => {
 export default App;
 
 const Wrapper = styled.div`
+  font-family: Calibri, sans-serif !important;
   height: 100vh;
   position: relative;
+  box-sizing: border-box;
+
   nav {
     border-bottom: 1px solid gray;
     text-align: center;
@@ -86,17 +89,20 @@ const Wrapper = styled.div`
   section {
     display: grid;
     place-content: center;
-    max-width: 100%;
-    height: calc(50vh - 3rem);
+    width: 90vw;
+    margin: auto;
+    margin-bottom: 4rem;
+
+    padding-bottom: 9rem;
     input {
     }
-
     button {
       margin-bottom: 3rem;
     }
     p {
-      font-size: calc(1rem + 0.390625vw);
-      margin: 0.5rem 0 0.5rem 0;
+      max-width: 60vw;
+      font-size: calc(0.95rem + 0.390625vw);
+      margin: 1.5rem 0 1.5rem 0;
     }
     .string-value,
     .string-value-two {
