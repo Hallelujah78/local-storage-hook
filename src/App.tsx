@@ -99,7 +99,8 @@ const Wrapper = styled.div`
     button {
       margin-bottom: 3rem;
     }
-    p {
+    p,
+    li {
       line-height: 2.1rem;
       max-width: 60vw;
       font-size: calc(0.95rem + 0.390625vw);

@@ -102,19 +102,21 @@ const ReactUseLocalStorage = () => {
         original type, a noop function (also from react-use), which is a
         function that does nothing. This makes some sense, as if we are not in a
         browser environment then there is no local storage. We also throw an
-        error if the key is null, since it is required.
+        error if the key is null, since it is required. Next, we initialize the
+        deserializer.
       </p>
+      <h1>A Tangent on Serialization/Deserialization</h1>
       <p>
-        Next, we initialize the deserializer. From Wikipedia: In computing,
-        serialization is the process of translating a data structure or object
-        state into a format that can be stored or transmitted and reconstructed
-        later. If we have provided parser options and raw is true, then the
-        deserializer is set to an anonymous function that takes a value of
-        unknown type and returns that value. It appears to do nothing to the
-        input. If raw is false, then serializer and deserializer must have
-        values - this is how the parserOptions type is set up - and we set the
-        deserializer to options.deserializer. Note, if options is false then the
-        deserializer defaults to JSON.parse.
+        From Wikipedia: In computing, serialization is the process of
+        translating a data structure or object state into a format that can be
+        stored or transmitted and reconstructed later. If we have provided
+        parser options and raw is true, then the deserializer is set to an
+        anonymous function that takes a value of unknown type and returns that
+        value. It appears to do nothing to the input. If raw is false, then
+        serializer and deserializer must have values - this is how the
+        parserOptions type is set up - and we set the deserializer to
+        options.deserializer. Note, if options is false then the deserializer
+        defaults to JSON.parse.
       </p>
       <p>
         Example of custom deserialization can be found{" "}
@@ -215,6 +217,7 @@ var deserialized = JSON.parse(serialized, deserialize)`}
         specifies the format and shape with which a value is serialised.
         Similarly for parse, we can supply a custom deserializer function.
       </p>
+      <h1>Back to the useLocalStorage Custom Hook</h1>
       <p>
         After that serialization/deserialization tangent, let's continue
         exploring useLocalStorage. Next, we have an initializer which appears to
@@ -256,6 +259,7 @@ var deserialized = JSON.parse(serialized, deserialize)`}
           wrapLongLines={true}
         />
       </div>
+      <h1>A useRef Tangent</h1>
       <p>
         Reminder: useRef is used to create a mutable reference to an element or
         value. It does not trigger a re-render. Commonly used to access and
@@ -304,6 +308,7 @@ const PreviousValueComponent = ({ value }) => {
         a more controlled and explicit way of interacting with a child
         component's methods or properties from its parent.
       </p>
+      <h1>Back to useLocalStorage</h1>
       <p>
         Back to our useLocalStorage hook, we can say that we are using useRef
         here because we want initialize to refer to a persistent value and we
@@ -347,7 +352,6 @@ typeof str2; // 'string'`}
         serializer, options.serializer. If options is false, we default to using
         JSON.stringify. Still inside our try block:
       </p>
-
       <div
         className="code-block-wrapper"
         style={{
@@ -437,6 +441,7 @@ if (localStorageValue !== null) {
           wrapLongLines={true}
         />
       </div>
+      <h1>A useLayoutEffect Tangent</h1>
       <p>
         Both useLayoutEffect and useEffect can be used to do the same thing.The
         useEffect hook runs after react renders your component and ensures that
@@ -485,10 +490,10 @@ React.useLayoutEffect(() => {
           wrapLongLines={true}
         />
       </div>
-      <p>
-        In the above example, use useLayoutEffect. A reminder of our
-        useLayoutEffect:
-      </p>
+      <p>In the above example, use useLayoutEffect.</p>
+      <h1>Back to our useLocalStorage Custom Hook</h1>
+      <p>A reminder of our useLayoutEffect:</p>
+
       <div
         className="code-block-wrapper"
         style={{
@@ -574,6 +579,188 @@ React.useLayoutEffect(() => {
           wrapLongLines={true}
         />
       </div>
+      <p>Next, we have a function declaration, set, which is a state setter:</p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const set: Dispatch<SetStateAction<T | undefined>> = useCallback(
+    (valOrFunc) => {
+      try {
+        const newState =
+          typeof valOrFunc === "function"
+            ? (valOrFunc as Function)(state)
+            : valOrFunc;
+        if (typeof newState === "undefined") return;
+        let value: string;
+
+        if (options)
+          if (options.raw)
+            if (typeof newState === "string") value = newState;
+            else value = JSON.stringify(newState);
+          else if (options.serializer) value = options.serializer(newState);
+          else value = JSON.stringify(newState);
+        else value = JSON.stringify(newState);
+
+        localStorage.setItem(key, value);
+        setState(deserializer(value));
+      } catch {
+        // If user is in private mode or has storage restriction
+        // localStorage can throw. Also JSON.stringify can throw.
+      }
+    },
+    [key, setState]
+  );`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        The set function is of type{" "}
+        <Code text={`Dispatch<SetStateAction>`} theme={dracula} language="ts" />
+        . Set takes a value or a function. If valOrFunc is a function, then
+        newState is set to the result of invoking the function with the argument{" "}
+        <Code text={`state`} theme={dracula} language="js" />. Otherwise,
+        newState is set to the value of valOrFunc.
+      </p>
+      <h1>A useCallback Tangent</h1>
+      <p>
+        According to the useCallback docs: If you're writing a custom Hook, it's
+        recommended to wrap any functions that it returns into useCallback. This
+        ensures that the consumers of your Hook can optimize their own code when
+        needed. The optimization here is reducing rerenders. According to
+        ChatGPT:
+      </p>
+      <ul>
+        <li>
+          Wrapping a function definition in a custom hook in useCallback means
+          that the function returned by the hook remains the same between
+          re-renders as long as the dependencies haven't changed.
+        </li>
+        <li>
+          When a function is passed to a child component as a prop, the default
+          behaviour in React is to create a new function instance on every
+          render.
+        </li>
+        <li>
+          {" "}
+          If the function is defined inline within the component or if it's a
+          result of calling a function inside the component, this can cause
+          unnecessary re-renders in child components because they detect a
+          change in the function reference.
+        </li>
+        <li>
+          By wrapping the function in useCallback, React will memoize the
+          function instance and only create a new one if the dependencies
+          specified in the useCallback array change. This means that if the
+          dependencies don't change between renders, the same function instance
+          will be reused, preventing unnecessary re-renders in child components
+          that rely on this function.
+        </li>
+      </ul>
+      <p>An example from ChatGPT:</p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`import React, { useState, useCallback } from 'react';
+
+function useCustomHook() {
+  const [count, setCount] = useState(0);
+
+  const increment = useCallback(() => {
+    setCount(prevCount => prevCount + 1);
+  }, [setCount]);
+
+  return { count, increment };
+}
+
+function ChildComponent({ onClick }) {
+  console.log('ChildComponent re-rendered');
+  return <button onClick={onClick}>Increment</button>;
+}
+
+function ParentComponent() {
+  const { count, increment } = useCustomHook();
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <ChildComponent onClick={increment} />
+    </div>
+  );
+}
+`}
+          language={"jsx"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        In this example, increment is wrapped in useCallback. This ensures that
+        ChildComponent won't re-render unnecessarily when ParentComponent
+        re-renders, because increment remains the same function instance as long
+        as setCount (its dependency) remains the same. This optimization can
+        lead to improved performance, especially in large and complex
+        applications.
+      </p>
+      <h1>
+        Back to the <Code text={`set`} theme={dracula} language="js" /> State
+        Setter
+      </h1>
+      <p>
+        Set is wrapped in useCallback to reduce rerenders. Also, remember, since
+        it is a state setter, it can take a callback that takes the previous
+        state and performs some action on it before returning the new state. And
+        so it makes sense that the argument for{" "}
+        <Code text={`set`} theme={dracula} language="js" /> is valOrFunc, and
+        where it is a function it gets invoked with{" "}
+        <Code text={`state`} theme={dracula} language="js" />, which is the old
+        state.
+      </p>
+      <p>
+        The remainder of our try block inside{" "}
+        <Code text={`set`} theme={dracula} language="js" />:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={` if (typeof newState === "undefined") return;
+        let value: string;
+
+        if (options)
+          if (options.raw)
+            if (typeof newState === "string") value = newState;
+            else value = JSON.stringify(newState);
+          else if (options.serializer) value = options.serializer(newState);
+          else value = JSON.stringify(newState);
+        else value = JSON.stringify(newState);
+
+        localStorage.setItem(key, value);
+        setState(deserializer(value));`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
     </Wrapper>
   );
 };
@@ -586,5 +773,8 @@ const Wrapper = styled.div`
   }
   p {
     margin: 1rem 0 1rem 0;
+  }
+  li {
+    list-style: inside;
   }
 `;
