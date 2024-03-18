@@ -383,11 +383,197 @@ if (localStorageValue !== null) {
         project in a private window and the code didn't throw. That's not to say
         that it won't, but it didn't in Chrome 122. With the try and catch in
         place, I played around with initializing the custom hook with a very
-        large string. When the string would exceed the storage quota the hook
-        does indeed fail silently - does not throw an error and does not set a
-        value in local storage. Removing a character from the string resulted in
-        the local storage value being set successfully.
+        large string. When the string exceeds the storage quota the hook does
+        indeed fail silently - does not throw an error and does not set a value
+        in local storage. Removing a character from the string resulted in the
+        local storage value being set successfully. Initializing the hook with a
+        large string and then setting some other local storage value that
+        doesn't use the hook will cause localStorage.set to throw.
       </p>
+      <p>
+        <Code text={`initializer.current`} theme={dracula} language="js" />{" "}
+        references the anonymous function that takes an argument key of type
+        string. It appears that to invoke this function we use{" "}
+        <Code text={`initializer.current(key)`} theme={dracula} language="js" />
+        . We could remove the useRef to see what the effect might be. I'll do
+        this later. After the initializer, we have some state that uses the
+        initializer:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={` const [state, setState] = useState<T | undefined>(() =>
+    initializer.current(key)
+  );`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        As noted above, state is initialized with initializer.current(key) and
+        so should reference the initialValue on first render. Next, we have a
+        useLayoutEffect:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`// eslint-disable-next-line react-hooks/rules-of-hooks
+  useLayoutEffect(() => setState(initializer.current(key)), [key]);`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        Both useLayoutEffect and useEffect can be used to do the same thing.The
+        useEffect hook runs after react renders your component and ensures that
+        your effect callback does not block browser painting. It's more
+        performant this way and most of the time this is what you want. If your
+        effect is mutating the DOM (via a DOM node ref) and the DOM mutation
+        will change the appearance of the DOM node between the time that it is
+        rendered and your effect mutates it, then you don't want to use
+        useEffect. You'll want to use useLayoutEffect.
+      </p>
+      <p>
+        The useLayoutEffect hook runs synchronously immediately after React has
+        performed all DOM mutations. This can be useful if you need to make DOM
+        measurements (like getting the scroll position or other styles for an
+        element) and then make DOM mutations or trigger a synchronous re-render
+        by updating state. Your code runs immediately after the DOM has been
+        updated, but before the browser has had a chance to "paint" those
+        changes (the user doesn't actually see the updates until after the
+        browser has repainted).
+      </p>
+      <p>
+        A special case whee useLayoutEffect should be used instead of useEffect
+        is where you are updating a value, like a ref, and you want to make sure
+        it's up-to-date before any other code runs.
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`const ref = React.useRef()
+React.useEffect(() => {
+  ref.current = 'some value'
+})
+
+// then, later in another hook or something
+React.useLayoutEffect(() => {
+  console.log(ref.current) // <-- this logs an old value because this runs first!
+})`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        In the above example, use useLayoutEffect. A reminder of our
+        useLayoutEffect:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={` // eslint-disable-next-line react-hooks/rules-of-hooks
+  useLayoutEffect(() => setState(initializer.current(key)), [key]);`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        At this point we know we are using this in place of a useEffect.
+        Everytime the key changes (the dependency array), we are synchronously
+        setting the value of state to be whatever is returned by
+        initializer.current(key).
+      </p>
+      <p>From the React dev docs:</p>
+      <p>
+        You can mutate the ref.current property. Unlike state, it is mutable.
+        However, if it holds an object that is used for rendering (for example,
+        a piece of your state), then you shouldn't mutate that object. When you
+        change the ref.current property, React does not re-render your
+        component. React is not aware of when you change it because a ref is a
+        plain JavaScript object. Do not write or read ref.current during
+        rendering, except for initialization. This makes your component's
+        behavior unpredictable. This means refs are perfect for storing
+        information that doesn't affect the visual output of your component. The
+        ref information is local to each copy of your component.
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`function MyComponent() {
+  // ...
+  // 🚩 Don't write a ref during rendering
+  myRef.current = 123;
+  // ...
+  // 🚩 Don't read a ref during rendering
+  return <h1>{myOtherRef.current}</h1>;
+}`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>Read or write refs from event handlers or effects instead:</p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`function MyComponent() {
+  // ...
+  useEffect(() => {
+    // ✅ You can read or write refs in effects
+    myRef.current = 123;
+  });
+  // ...
+  function handleClick() {
+    // ✅ You can read or write refs in event handlers
+    doSomething(myOtherRef.current);
+  }
+  // ...
+}`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
     </Wrapper>
   );
 };
@@ -402,21 +588,3 @@ const Wrapper = styled.div`
     margin: 1rem 0 1rem 0;
   }
 `;
-
-//  <Code text={`Dispatch`} theme={dracula} language="js" />
-
-//  <div
-//    className="code-block-wrapper"
-//    style={{
-//      fontFamily: "Fira Code",
-//      fontSize: "calc(0.90rem + 0.390625vw)",
-//    }}
-//  >
-//    <CodeBlock
-//      text={``}
-//      language={"js"}
-//      theme={dracula}
-//      showLineNumbers={false}
-//      wrapLongLines={true}
-//    />
-//  </div>
