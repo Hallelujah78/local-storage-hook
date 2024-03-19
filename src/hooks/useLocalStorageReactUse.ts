@@ -29,7 +29,7 @@ const useLocalStorage = <T>(
   if (!key) {
     throw new Error("useLocalStorage key may not be falsy");
   }
-  console.log("use local storage hook is running");
+
   const deserializer = options
     ? options.raw
       ? (value: unknown) => value
@@ -62,9 +62,9 @@ const useLocalStorage = <T>(
   });
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [state, setState] = useState<T | undefined>(() =>
-    initializer.current(key)
-  );
+  const [state, setState] = useState<T | undefined>(() => {
+    return initializer.current(key);
+  });
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useLayoutEffect(() => setState(initializer.current(key)), [key]);
@@ -78,6 +78,7 @@ const useLocalStorage = <T>(
             ? (valOrFunc as Function)(state)
             : valOrFunc;
         if (typeof newState === "undefined") return;
+
         let value: string;
 
         if (options)

@@ -3,13 +3,14 @@ import styled from "styled-components";
 import { CodeBlock, Code, dracula } from "react-code-blocks";
 
 const ReactUseLocalStorage = () => {
-  const [value, setValue, remove] = useLocalStorage("storageLimit", "foo");
+  const [value, setValue, remove] = useLocalStorage("value", "foo");
   return (
     <Wrapper>
       <div>Value: {value}</div>
       <button onClick={() => setValue("bar")}>bar</button>
       <button onClick={() => setValue("baz")}>baz</button>
       <button onClick={() => remove()}>Remove</button>
+      <button onClick={() => setValue(undefined)}>Undefined</button>
       <p>
         This uses the useLocalStorage hook from react-use. Let's dig into how
         this works and hopefully learn something!
@@ -761,6 +762,172 @@ function ParentComponent() {
           wrapLongLines={true}
         />
       </div>
+      <p>
+        Here, newState can be undefined, and so if it is undefined we simply
+        return. Two points here, in useLocalStorage we export{" "}
+        <Code text={`[state, set, remove];`} theme={dracula} language="js" />.
+        When that is destructured in our ReactUseLocalStorage.tsx component it
+        can be renamed to whatever we want. In the example code from react-use
+        it is destructed as:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`const [value, setValue, remove] = useLocalStorage("value", "foo");`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        {" "}
+        It is the order of the items in the array that determines how they
+        correspond to the exported array. This is a small point, but something I
+        wasn't aware of and is probably a JavaScript thing and not a React
+        thing.
+      </p>
+      <p>
+        Point two, the code that returns if newState is undefined appears to be
+        so that nothing happens if we call{" "}
+        <Code text={`set(undefined)`} theme={dracula} language="js" /> or{" "}
+        <Code text={`set(()=>undefined)`} theme={dracula} language="js" />, and
+        it is possible to call{" "}
+        <Code text={`set`} theme={dracula} language="js" /> in this way.
+      </p>
+      <p>
+        The remainder of the code is straightforward enough. If options is
+        truthy and options raw is true, then newState is a string and should not
+        need to be serialized and so the value of value is set to newState.
+        Otherwise, newState is serialized with a custom serializer or
+        stringified with JSON.stringify as appropriate. Finally we set local
+        storage to the key/value pair and we set the state. Again, the try-catch
+        is there as JSON.stringify and/or localStorage can throw.
+      </p>
+      <p>Lastly, the dependency array is missing deps:</p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`React Hook useCallback has missing dependencies: 'deserializer', 'options', and 'state'. Either include them or remove the dependency array.`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        Not sure why these have been omitted. Adding two of the missing
+        dependencies doesn't appear to create any problems, although there could
+        be performance issues or the inclusion of the dependencies are just
+        unnecessary. Including all three omitted dependencies causes a further
+        eslint warning in relation to this code:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`const deserializer = options
+    ? options.raw
+      ? (value: unknown) => value
+      : options.deserializer
+    : JSON.parse;`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>The warning is:</p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`The 'deserializer' conditional could make the dependencies of useCallback Hook (at line 99) change on every render. To fix this, wrap the initialization of 'deserializer' in its own useMemo() Hook.`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        The <Code text={`remove`} theme={dracula} language="js" /> function is
+        straightforward and doesn't require explanation:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`// eslint-disable-next-line react-hooks/rules-of-hooks
+  const remove = useCallback(() => {
+    try {
+      localStorage.removeItem(key);
+      setState(undefined);
+    } catch {
+      // If user is in private mode or has storage restriction
+      // localStorage can throw.
+    }
+  }, [key, setState]);`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <h1>
+        Exploring the Code with{" "}
+        <Code text={`console.log`} theme={dracula} language="js" />
+      </h1>
+      <p>
+        By placing a console.log in the body of the hook, we can see that it
+        runs when the app first loads and whenever we click the bar, baz, or
+        remove buttons. That is, when we call{" "}
+        <Code text={`set`} theme={dracula} language="js" /> or{" "}
+        <Code text={`remove`} theme={dracula} language="js" />.
+      </p>
+      <p>
+        Using set (with the same value) or remove twice in a row will cause
+        output to the console each click. Calling them a third time, there will
+        be no output.
+      </p>
+      <ul>
+        <li>The deserializer is set each time the hook runs.</li>
+        <li>
+          The initializer is only set when the app first loads and the hook is
+          initially called. Hence, the deserializer is only initialized once on
+          load.
+        </li>
+        <li>
+          Obviously, useState (state and setState) is only called and
+          initialized by the initializer on load.
+        </li>
+        <li>
+          The useLayoutEffect only runs once on load, since the key prop in its
+          dependency array only changes when the programmer changes it in the
+          code.
+        </li>
+      </ul>
     </Wrapper>
   );
 };
