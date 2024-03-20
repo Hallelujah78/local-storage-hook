@@ -2,13 +2,43 @@ import useLocalStorage from "../hooks/useLocalStorageReactUse";
 import styled from "styled-components";
 import { CodeBlock, Code, dracula } from "react-code-blocks";
 
+import { serialize, deserialize } from "../utils/utils";
+
 const ReactUseLocalStorage = () => {
-  const [value, setValue, remove] = useLocalStorage("value", "foo");
+  const [value, setValue, remove] = useLocalStorage(
+    "value",
+    {
+      email: /^j(ohn){0,1}(\.){0,1}doe@example.com$/i,
+      name: "John Doe",
+      yearOfBirth: 1988,
+    },
+    { raw: false, serializer: serialize, deserializer: deserialize }
+  );
   return (
     <Wrapper>
-      <div>Value: {value}</div>
-      <button onClick={() => setValue("bar")}>bar</button>
-      <button onClick={() => setValue("baz")}>baz</button>
+      <div>Value: {value ? value.email.toString() : null}</div>
+      <button
+        onClick={() =>
+          setValue({
+            email: /^j(ohn){0,1}(\.){0,1}doe@example.com$/i,
+            name: "John Doe",
+            yearOfBirth: 1987,
+          })
+        }
+      >
+        bar
+      </button>
+      <button
+        onClick={() =>
+          setValue({
+            email: /^g(avan){0,1}(\.){0,1}browne@example.com$/i,
+            name: "Gavan Browne",
+            yearOfBirth: 1978,
+          })
+        }
+      >
+        baz
+      </button>
       <button onClick={() => remove()}>Remove</button>
       <button onClick={() => setValue(undefined)}>Undefined</button>
       <p>
@@ -928,6 +958,116 @@ function ParentComponent() {
           code.
         </li>
       </ul>
+      <h1>Can We Change or Improve this Code?</h1>
+      <p>
+        One question that occurs is why is the serializer initialized inside the
+        initializer, and so only initialized once, but the deserializer is
+        initialized outside the initializer and is initialized every time that
+        set or remove is called. In fact, it's initialized any time that a
+        component that uses the hook is re-rendered.
+      </p>
+      <p>The purpose of the initializer is to:</p>
+      <ul>
+        <li>Check if local storage is empty.</li>
+        <li>
+          If local storage is not empty, deserialize it and return the value.
+        </li>
+        <li>
+          If local storage is empty, serialize the initial value and return that
+          initial value.
+        </li>
+        <li>The returned value from initializer is used to set state.</li>
+      </ul>
+      <h1>Potential Options</h1>
+      <h2>Option 1</h2>
+      <p>
+        Move <Code text={`deserializer`} theme={dracula} language="js" /> inside{" "}
+        <Code text={`initializer`} theme={dracula} language="js" />. You would
+        then have to do something like the following inside{" "}
+        <Code text={`set`} theme={dracula} language="js" />:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={` if (options)
+          if (options.raw) setState(newState);
+          else setState(options.deserializer(value));
+        else setState(JSON.parse(value));`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        Using this option, we can also add{" "}
+        <Code text={`options`} theme={dracula} language="js" /> and{" "}
+        <Code text={`state`} theme={dracula} language="js" /> to the dependency
+        array of our <Code text={`set`} theme={dracula} language="js" />{" "}
+        function and clear that eslint warning.
+      </p>
+      <h2>Option 2</h2>
+      <p>
+        Make <Code text={`deserializer`} theme={dracula} language="js" /> a ref:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`// eslint-disable-next-line react-hooks/rules-of-hooks
+  const deserializer = useRef(() => {
+    return options
+      ? options.raw
+        ? (value: unknown) => value
+        : options.deserializer
+      : JSON.parse;
+  });`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
+      <p>
+        Invoke similarly to how initializer is invoked:{" "}
+        <Code
+          text={`deserializer.current(localStorageValue)`}
+          theme={dracula}
+          language="js"
+        />
+        . This is not working for me but might possibly work.
+      </p>
+      <h2>Option 3</h2>
+      <p>
+        Have initializer return an object that has initialValue, serializer and
+        deserializer on it. This will add more boilerplate. This does work:
+      </p>
+      <div
+        className="code-block-wrapper"
+        style={{
+          fontFamily: "Fira Code",
+          fontSize: "calc(0.90rem + 0.390625vw)",
+        }}
+      >
+        <CodeBlock
+          text={`const [state, setState] = useState<T | undefined>(() => {
+    return initializer.current(key).initialValue;
+  });`}
+          language={"js"}
+          theme={dracula}
+          showLineNumbers={false}
+          wrapLongLines={true}
+        />
+      </div>
     </Wrapper>
   );
 };
@@ -943,5 +1083,8 @@ const Wrapper = styled.div`
   }
   li {
     list-style: inside;
+  }
+  h2 {
+    font-size: calc(1.25rem + 0.390625vw);
   }
 `;

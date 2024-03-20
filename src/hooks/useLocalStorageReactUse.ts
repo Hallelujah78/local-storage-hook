@@ -30,21 +30,20 @@ const useLocalStorage = <T>(
     throw new Error("useLocalStorage key may not be falsy");
   }
 
-  const deserializer = options
-    ? options.raw
-      ? (value: unknown) => value
-      : options.deserializer
-    : JSON.parse;
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const initializer = useRef((key: string) => {
     try {
-      console.log("initializer code is running");
       const serializer = options
         ? options.raw
           ? String
           : options.serializer
         : JSON.stringify;
+
+      const deserializer = options
+        ? options.raw
+          ? (value: unknown) => value
+          : options.deserializer
+        : JSON.parse;
 
       const localStorageValue = localStorage.getItem(key);
       if (localStorageValue !== null) {
@@ -90,13 +89,19 @@ const useLocalStorage = <T>(
         else value = JSON.stringify(newState);
 
         localStorage.setItem(key, value);
-        setState(deserializer(value));
+
+        if (options)
+          if (options.raw) setState(newState);
+          else setState(options.deserializer(value));
+        else setState(JSON.parse(value));
+
+        // setState(deserializer(value));
       } catch {
         // If user is in private mode or has storage restriction
         // localStorage can throw. Also JSON.stringify can throw.
       }
     },
-    [key, setState]
+    [key, setState, state, options]
   );
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
