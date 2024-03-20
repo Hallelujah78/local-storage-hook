@@ -74,7 +74,7 @@ const useLocalStorage = <T>(
       try {
         const newState =
           typeof valOrFunc === "function"
-            ? (valOrFunc as Function)(state)
+            ? (valOrFunc as (state: T | undefined) => void)(state)
             : valOrFunc;
         if (typeof newState === "undefined") return;
 
@@ -94,8 +94,6 @@ const useLocalStorage = <T>(
           if (options.raw) setState(newState);
           else setState(options.deserializer(value));
         else setState(JSON.parse(value));
-
-        // setState(deserializer(value));
       } catch {
         // If user is in private mode or has storage restriction
         // localStorage can throw. Also JSON.stringify can throw.

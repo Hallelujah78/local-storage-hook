@@ -6,7 +6,7 @@ import { serialize, deserialize } from "../utils/utils";
 
 const ReactUseLocalStorage = () => {
   const [value, setValue, remove] = useLocalStorage(
-    "value",
+    "valueReactUse",
     {
       email: /^j(ohn){0,1}(\.){0,1}doe@example.com$/i,
       name: "John Doe",
@@ -16,7 +16,7 @@ const ReactUseLocalStorage = () => {
   );
   return (
     <Wrapper>
-      <div>Value: {value ? value.email.toString() : null}</div>
+      <div>Value: {value ? value.name : null}</div>
       <button
         onClick={() =>
           setValue({
@@ -494,7 +494,7 @@ if (localStorageValue !== null) {
         browser has repainted).
       </p>
       <p>
-        A special case whee useLayoutEffect should be used instead of useEffect
+        A special case when useLayoutEffect should be used instead of useEffect
         is where you are updating a value, like a ref, and you want to make sure
         it's up-to-date before any other code runs.
       </p>

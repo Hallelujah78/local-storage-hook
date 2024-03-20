@@ -4,14 +4,12 @@ import styled from "styled-components";
 import ReactUseLocalStorage from "./components/ReactUseLocalStorage";
 
 const App: React.FC = () => {
-  const { getLocalStorage, setLocalStorage } = useLocalStorage();
+  const [state, set] = useLocalStorage("value", "initial");
   const [string, setString] = useState<string | null>("");
   const [secondString, setSecondString] = useState<string>(() => {
     return localStorage.getItem("secondString") || "";
   });
-  const [thirdString, setThirdString] = useState<string>(() => {
-    return getLocalStorage("thirdString");
-  });
+
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleClick = () => {
@@ -23,9 +21,7 @@ const App: React.FC = () => {
       setSecondString(inputRef.current.value);
       localStorage.setItem("secondString", inputRef.current.value);
       // thirdString
-      setThirdString(inputRef.current.value);
-      setLocalStorage("thirdString", inputRef.current.value);
-      // reset input
+      set(inputRef.current.value);
       inputRef.current.value = "";
     }
   };
@@ -60,7 +56,7 @@ const App: React.FC = () => {
           Value 2 is initialized from local storage using a callback in the
           useState. If you refresh the page, there is no flash.
         </p>
-        <h1 className="string-value:">value 3: {thirdString}</h1>
+        <h1 className="string-value:">value 3: {state}</h1>
         <ReactUseLocalStorage />
       </section>
     </Wrapper>
