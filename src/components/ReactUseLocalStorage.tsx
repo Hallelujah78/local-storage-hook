@@ -121,10 +121,10 @@ const ReactUseLocalStorage = () => {
         key, optional intialValue, and optional options paramaters.
       </p>
       <p>
-        The hook returns an array, or actually a tuple (?) where the first
-        element is of type T or undefined, the second element is a state setter
-        which takes parameters of type T or undefined, and the final parameter
-        is a function that takes no params and returns nothing.
+        The hook returns a tuple where the first element is of type T or
+        undefined, the second element is a state setter which takes parameters
+        of type T or undefined, and the final parameter is a function that takes
+        no params and returns nothing.
       </p>
       <p>
         Next we check isBrowser (which is imported from a util file in
@@ -1068,6 +1068,49 @@ function ParentComponent() {
           wrapLongLines={true}
         />
       </div>
+      <h2>Summary of Important Points</h2>
+      <ul>
+        <li>
+          The generic type T is the type of the initialValue if there is one. It
+          is used to type the value that the hook returns, the value stored in
+          state, and the deserialized value when we get the item from local
+          storage.
+        </li>
+        <li>
+          The initializer function is wrapped in a useRef because: it will only
+          run once on first load, it is not being returned from the hook - it
+          would be wrapped in useCallback if this were the case. We don't want
+          the initializer to be recreated each time we call the hook. Its
+          purpose is to get or set the local storage and return that value so
+          that the state of the hook can be set.
+        </li>
+        <li>
+          The useState hook runs only once and is initialized with the
+          initializer function.
+        </li>
+        <li>
+          The useLayoutEffect hook only runs once on load. The key is hardcoded
+          and so its dependencies never change. However, looking at the commit
+          history, we can see that how the hook is initialized has changed. The
+          useLayoutEffect hook was specifically added to reinitialize the hook
+          when the key changes. Not sure what the use case is for this. Without
+          testing it, it seems like the old key and value would remain in local
+          storage and we would have the new key with whatever value we want to
+          set. I think the reason we are using useLayoutEffect here is that it
+          is synchronous and will run before useEffect. If we used useEffect our
+          component would render and then the useEffect would trigger another
+          render. Using useLayoutEffect means that state is set withe useState
+          hook on first load and then the useLayoutEffect sets the state
+          immediately WITHOUT triggering a re-render. It makes sense since we
+          are effectively setting the state twice, once with useState and once
+          with useLayoutEffect, and the values in both cases are the same.
+        </li>
+        <li>
+          The set and remove functions are wrapped in useCallback as they are
+          being returned from the hook and wrapping them in useCallback prevents
+          unnecessary rerenders.
+        </li>
+      </ul>
     </Wrapper>
   );
 };

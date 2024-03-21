@@ -66,7 +66,10 @@ const useLocalStorage = <T>(
   });
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  useLayoutEffect(() => setState(initializer.current(key)), [key]);
+  useLayoutEffect(() => {
+    console.log("running uselayouteffect");
+    setState(initializer.current(key));
+  }, [key]);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const set: Dispatch<SetStateAction<T | undefined>> = useCallback(
